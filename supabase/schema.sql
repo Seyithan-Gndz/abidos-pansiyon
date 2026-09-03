@@ -22,6 +22,18 @@ create table public.rooms (
   updated_by uuid references auth.users(id)
 );
 
+create table public.business_settings (
+  id smallint primary key default 1 check (id = 1),
+  business_name text not null default 'Abidos Pansiyon',
+  phone text not null default '',
+  address text not null default '',
+  check_in_time time not null default '14:00',
+  check_out_time time not null default '11:00',
+  currency text not null default 'TRY',
+  updated_at timestamptz not null default now(),
+  updated_by uuid references auth.users(id)
+);
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -83,6 +95,8 @@ $$;
 
 alter table public.profiles enable row level security;
 alter table public.rooms enable row level security;
+alter table public.business_settings enable row level security;
+grant select, update on public.business_settings to authenticated;
 
 create policy "Kullanıcı kendi profilini, admin tüm profilleri görür"
 on public.profiles for select to authenticated
@@ -102,6 +116,15 @@ on public.rooms for update to authenticated
 using (public.is_approved_user())
 with check (public.is_approved_user());
 
+create policy "Ayarları admin görür"
+on public.business_settings for select to authenticated
+using (public.is_admin());
+
+create policy "Ayarları admin günceller"
+on public.business_settings for update to authenticated
+using (public.is_admin())
+with check (public.is_admin());
+
 create or replace function public.set_room_audit_fields()
 returns trigger language plpgsql as $$
 begin
@@ -114,6 +137,21 @@ $$;
 create trigger set_room_audit
 before update on public.rooms
 for each row execute procedure public.set_room_audit_fields();
+
+create or replace function public.set_business_settings_audit()
+returns trigger language plpgsql as $$
+begin
+  new.updated_at = now();
+  new.updated_by = auth.uid();
+  return new;
+end;
+$$;
+
+create trigger set_business_settings_audit
+before update on public.business_settings
+for each row execute procedure public.set_business_settings_audit();
+
+insert into public.business_settings (id) values (1);
 
 insert into public.rooms (id, room_number, floor, data) values
 ('room-501',501,5,'{"id":"room-501","roomNumber":501,"floor":5,"capacity":1,"bedInfo":"Uzun süreli konaklama","monthlyPrice":"12.000 ₺ / ay","note":"8 yıldır konaklıyor","status":"occupied","stay":{"guestName":"Mustafa Öner","checkInDate":"2018-09-01","checkOutDate":null,"nights":"monthly","guestCount":1,"appliedPrice":"12.000 ₺ / ay","note":"Uzun süreli misafir"}}'),
@@ -143,4 +181,3 @@ on conflict (id) do nothing;
 -- İlk kullanıcı kayıt olduktan sonra onu admin yapmak için e-postayı değiştirip çalıştırın:
 -- update public.profiles set role = 'admin', approval_status = 'approved'
 -- where email = 'ilk-admin@ornek.com';
-
