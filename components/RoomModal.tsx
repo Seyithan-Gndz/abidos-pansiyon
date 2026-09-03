@@ -8,7 +8,7 @@ import type { CheckInInput, Room } from "@/types/room";
 interface Props { room: Room; onClose: () => void; onCheckIn: (room: Room, input: CheckInInput) => void; onCheckOut: (room: Room) => void; }
 
 export function RoomModal({ room, onClose, onCheckIn, onCheckOut }: Props) {
-  const [form, setForm] = useState<CheckInInput>({ guestName:"", checkInDate: new Date().toISOString().slice(0,10), nights:1, guestCount:1, appliedPrice:"", note:"" });
+  const [form, setForm] = useState<CheckInInput>({ guestName:"", checkInDate: new Date().toISOString().slice(0,10), nights:1, guestCount:1, appliedPrice:"", paymentAmount:0, paymentMethod:"cash", note:"" });
   const checkoutDate = addDays(form.checkInDate, form.nights);
   useEffect(() => { const close = (event: KeyboardEvent) => event.key === "Escape" && onClose(); window.addEventListener("keydown", close); return () => window.removeEventListener("keydown", close); }, [onClose]);
   const submit = (event: FormEvent) => { event.preventDefault(); onCheckIn(room, form); };
@@ -34,7 +34,8 @@ export function RoomModal({ room, onClose, onCheckIn, onCheckOut }: Props) {
           <label className="form-field"><span>Giriş tarihi</span><input type="date" required value={form.checkInDate} onChange={e => set("checkInDate",e.target.value)}/></label>
           <label className="form-field"><span>Kaç gece kalacak?</span><input type="number" min="1" required value={form.nights} onChange={e => set("nights",Number(e.target.value))}/></label>
           <label className="form-field"><span>Kişi sayısı</span><select value={form.guestCount} onChange={e => set("guestCount",Number(e.target.value))}>{Array.from({length:room.capacity},(_,index) => <option key={index+1} value={index+1}>{index+1} kişi</option>)}</select></label>
-          <label className="form-field"><span>Uygulanan fiyat</span><input required placeholder="Örn. 2.500 ₺" value={form.appliedPrice} onChange={e => set("appliedPrice",e.target.value)}/></label>
+          <label className="form-field"><span>Toplam konaklama tutarı</span><input type="number" min="0" step="0.01" required placeholder="Örn. 2500" value={form.paymentAmount || ""} onChange={e => set("paymentAmount",Number(e.target.value))}/></label>
+          <label className="form-field"><span>Ödeme şekli</span><select value={form.paymentMethod} onChange={e => set("paymentMethod",e.target.value as CheckInInput["paymentMethod"])}><option value="cash">Nakit</option><option value="card">Kredi kartı</option><option value="receivable">Ödenmedi / Alacak</option></select></label>
           <label className="form-field sm:col-span-2"><span>Kısa not <em>İsteğe bağlı</em></span><textarea rows={3} placeholder="Konaklamayla ilgili kısa bir not..." value={form.note} onChange={e => set("note",e.target.value)}/></label>
         </div>
         <div className="mt-5 flex items-center gap-3 rounded-lg border border-sky-200 bg-sky-50 p-3.5 text-[#246587]"><CalendarDays size={21}/><div><span className="block text-[9px] font-bold tracking-wider">PLANLANAN ÇIKIŞ</span><strong className="font-display">{formatDate(checkoutDate)}</strong></div></div>

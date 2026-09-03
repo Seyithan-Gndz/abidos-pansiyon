@@ -2,6 +2,7 @@
 
 create type public.user_role as enum ('admin', 'reception');
 create type public.approval_status as enum ('pending', 'approved', 'rejected');
+create type public.payment_method as enum ('cash', 'card', 'receivable');
 
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -32,6 +33,19 @@ create table public.business_settings (
   currency text not null default 'TRY',
   updated_at timestamptz not null default now(),
   updated_by uuid references auth.users(id)
+);
+
+create table public.cash_entries (
+  id uuid primary key default gen_random_uuid(),
+  room_id text not null references public.rooms(id),
+  room_number integer not null,
+  guest_name text not null,
+  amount numeric(12,2) not null check (amount >= 0),
+  payment_method public.payment_method not null,
+  check_in_date date not null,
+  check_out_date date,
+  created_by uuid not null references auth.users(id),
+  created_at timestamptz not null default now()
 );
 
 create or replace function public.handle_new_user()
@@ -96,7 +110,9 @@ $$;
 alter table public.profiles enable row level security;
 alter table public.rooms enable row level security;
 alter table public.business_settings enable row level security;
+alter table public.cash_entries enable row level security;
 grant select, update on public.business_settings to authenticated;
+grant select on public.cash_entries to authenticated;
 
 create policy "Kullanıcı kendi profilini, admin tüm profilleri görür"
 on public.profiles for select to authenticated
@@ -124,6 +140,10 @@ create policy "Ayarları admin günceller"
 on public.business_settings for update to authenticated
 using (public.is_admin())
 with check (public.is_admin());
+
+create policy "Kasa hareketlerini yalnızca admin görür"
+on public.cash_entries for select to authenticated
+using (public.is_admin());
 
 create or replace function public.set_room_audit_fields()
 returns trigger language plpgsql as $$
@@ -159,6 +179,32 @@ $$;
 create trigger protect_room_definition
 before update on public.rooms
 for each row execute procedure public.protect_room_definition();
+
+create or replace function public.check_in_room(p_room_id text, p_stay jsonb, p_amount numeric, p_payment_method public.payment_method)
+returns void language plpgsql security definer set search_path = public as $$
+declare current_room public.rooms;
+begin
+  if not public.is_approved_user() then raise exception 'Yetkisiz işlem.'; end if;
+  select * into current_room from public.rooms where id = p_room_id for update;
+  if current_room.id is null then raise exception 'Oda bulunamadı.'; end if;
+  if current_room.data ->> 'status' <> 'available' then raise exception 'Oda müsait değil.'; end if;
+  update public.rooms set data = jsonb_set(jsonb_set(data, '{status}', '"occupied"'), '{stay}', p_stay) where id = p_room_id;
+  insert into public.cash_entries (room_id, room_number, guest_name, amount, payment_method, check_in_date, check_out_date, created_by)
+  values (p_room_id, current_room.room_number, coalesce(p_stay ->> 'guestName', ''), p_amount, p_payment_method, (p_stay ->> 'checkInDate')::date, nullif(p_stay ->> 'checkOutDate', '')::date, auth.uid());
+end;
+$$;
+
+create or replace function public.check_out_room(p_room_id text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_approved_user() then raise exception 'Yetkisiz işlem.'; end if;
+  update public.rooms set data = (data - 'stay') || '{"status":"available"}'::jsonb where id = p_room_id and data ->> 'status' = 'occupied';
+  if not found then raise exception 'Dolu oda bulunamadı.'; end if;
+end;
+$$;
+
+grant execute on function public.check_in_room(text, jsonb, numeric, public.payment_method) to authenticated;
+grant execute on function public.check_out_room(text) to authenticated;
 
 create or replace function public.set_business_settings_audit()
 returns trigger language plpgsql as $$

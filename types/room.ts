@@ -1,5 +1,6 @@
 export type RoomStatus = "available" | "occupied" | "out_of_service";
 export type RentalType = "daily" | "monthly";
+export type PaymentMethod = "cash" | "card" | "receivable";
 
 export interface StayDetails {
   guestName?: string;
@@ -8,6 +9,8 @@ export interface StayDetails {
   nights: number | "monthly";
   guestCount: number;
   appliedPrice: string;
+  paymentAmount?: number;
+  paymentMethod?: PaymentMethod;
   note?: string;
 }
 
@@ -31,5 +34,7 @@ export interface CheckInInput {
   nights: number;
   guestCount: number;
   appliedPrice: string;
+  paymentAmount: number;
+  paymentMethod: PaymentMethod;
   note?: string;
 }

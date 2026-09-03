@@ -15,20 +15,20 @@ class SupabaseRoomRepository implements RoomRepository {
   }
 
   async checkIn(current: Room[], roomId: string, stay: StayDetails) {
-    return this.save(current, roomId, { status: "occupied", stay });
+    const { error } = await createClient().rpc("check_in_room", {
+      p_room_id: roomId,
+      p_stay: stay,
+      p_amount: stay.paymentAmount ?? 0,
+      p_payment_method: stay.paymentMethod ?? "receivable",
+    });
+    if (error) throw new Error("Oda verilemedi: " + error.message);
+    return current.map((room) => room.id === roomId ? { ...room, status: "occupied" as const, stay } : room);
   }
 
   async checkOut(current: Room[], roomId: string) {
-    return this.save(current, roomId, { status: "available", stay: undefined });
-  }
-
-  private async save(current: Room[], roomId: string, changes: Partial<Room>) {
-    const next = current.map((room) => room.id === roomId ? { ...room, ...changes } : room);
-    const changed = next.find((room) => room.id === roomId);
-    if (!changed) throw new Error("Oda bulunamadı.");
-    const { error } = await createClient().from("rooms").update({ data: changed }).eq("id", roomId);
-    if (error) throw new Error("Oda güncellenemedi: " + error.message);
-    return next;
+    const { error } = await createClient().rpc("check_out_room", { p_room_id: roomId });
+    if (error) throw new Error("Çıkış yapılamadı: " + error.message);
+    return current.map((room) => room.id === roomId ? { ...room, status: "available" as const, stay: undefined } : room);
   }
 }
 

@@ -17,7 +17,7 @@ export function RoomPlan({ profile }: { profile: UserProfile }) {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   useEffect(() => { let active = true; roomRepository.list().then(result => active && setRooms(result)).catch(() => active && setError("Oda verileri yüklenemedi.")); return () => { active = false; }; }, []);
   const close = useCallback(() => setSelectedRoom(null), []);
-  const checkIn = async (room: Room, input: CheckInInput) => { try { setRooms(await roomRepository.checkIn(rooms,room.id,{...input,checkOutDate:addDays(input.checkInDate,input.nights)})); close(); } catch { setError("Oda güncellenemedi."); } };
+  const checkIn = async (room: Room, input: CheckInInput) => { try { setRooms(await roomRepository.checkIn(rooms,room.id,{...input,appliedPrice:`${new Intl.NumberFormat("tr-TR").format(input.paymentAmount)} ₺`,checkOutDate:addDays(input.checkInDate,input.nights)})); close(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Oda güncellenemedi."); } };
   const checkOut = async (room: Room) => { try { setRooms(await roomRepository.checkOut(rooms,room.id)); close(); } catch { setError("Oda güncellenemedi."); } };
 
   return <><Header rooms={rooms} profile={profile}/><main className="mx-auto max-w-[1580px] px-5 py-10 md:px-10 xl:px-16">
