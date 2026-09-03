@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme inline { --font-sans:"Segoe UI",Arial,sans-serif; --font-display:"Aptos Display","Segoe UI",Arial,sans-serif; }
+*{box-sizing:border-box}
+body{min-width:320px;margin:0;color:#162430;background:radial-gradient(circle at 90% 0,#e4edf0 0,transparent 32%),#f3f5f6;font-family:"Segoe UI",Arial,sans-serif}
+button{cursor:pointer}
+.floor-rooms{display:grid;grid-template-columns:repeat(var(--room-count,6),minmax(0,190px));gap:10px;align-content:center;overflow-x:auto;padding:12px 14px}
+.floor-rooms:has(>:nth-child(2):last-child){--room-count:2}.floor-rooms:has(>:nth-child(4):last-child){--room-count:4}.floor-rooms:has(>:nth-child(6):last-child){--room-count:6}
+.room-card{display:flex;min-height:134px;height:100%;flex-direction:column;overflow:hidden;border:1px solid;border-radius:9px;padding:12px;text-align:left;backdrop-filter:blur(14px) saturate(135%);-webkit-backdrop-filter:blur(14px) saturate(135%);transition:.2s ease}
+.room-card:hover{transform:translateY(-2px);box-shadow:0 8px 18px #17374716}
+.room-available{border-color:#a7d5e8cc;background:linear-gradient(145deg,#f5fcffcc,#dff2f9a8);color:#173d52;box-shadow:inset 0 1px #ffffffd9}.room-occupied{border-color:#78b98db3;background:linear-gradient(145deg,#175c3bea,#0d442bd9);color:#f2fff6;box-shadow:inset 0 1px #ffffff2e,0 8px 20px #0d442b2b}.room-out_of_service{border-color:#d3d9dc;background:#eceff0;color:#707a7f}
+.room-available .status-dot,.status-dot-available{background:#2785b5}.room-occupied .status-dot,.status-dot-occupied{background:#c14b47}.room-out_of_service .status-dot,.status-dot-out_of_service{background:#858f94}
+.form-field{display:flex;flex-direction:column;gap:7px}.form-field>span{font-size:11px;font-weight:700;color:#4e5e66}.form-field em{float:right;font-style:normal;font-weight:400;color:#9aa4a9}.form-field input,.form-field select,.form-field textarea{width:100%;border:1px solid #ccd5d9;border-radius:8px;background:#fbfcfc;padding:12px 13px;outline:none}.form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:#3287b5;box-shadow:0 0 0 3px #dceff8}
+@media(max-width:1350px){.floor-rooms{grid-template-columns:repeat(var(--room-count,6),minmax(150px,1fr))}}
+@media(max-width:960px){.floor-rooms{grid-template-columns:repeat(var(--room-count,6),165px)}}
+@media(max-width:620px){.floor-rooms{grid-template-columns:repeat(var(--room-count,6),155px);padding:10px}.room-card{min-height:128px}}
+.panel{border:1px solid #e2e8f0;border-radius:12px;background:white;box-shadow:0 8px 30px #24394608}
+.panel-head{display:flex;min-height:70px;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #f1f5f9;padding:14px 16px}
+.panel-head p{font-size:9px;font-weight:800;letter-spacing:.16em;color:#94a3b8}
+.panel-head h2{margin-top:2px;font-family:"Aptos Display","Segoe UI",Arial,sans-serif;font-size:15px;font-weight:800;color:#173545}
