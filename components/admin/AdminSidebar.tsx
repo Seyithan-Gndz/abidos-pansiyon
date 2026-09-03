@@ -9,7 +9,7 @@ const menu = [
   { label: "Odalar", icon: BedDouble, href: "/admin/rooms" },
   { label: "Kasa", icon: Banknote, href: "/admin/cash" },
   { label: "Personel", icon: UsersRound, href: "/admin/staff" },
-  { label: "İşlem Geçmişi", icon: History },
+  { label: "İşlem Geçmişi", icon: History, href: "/admin/history" },
   { label: "Ayarlar", icon: Settings, href: "/admin/settings" },
 ];
 

@@ -38,3 +38,15 @@ export interface CashEntry {
   created_by: string;
   created_at: string;
 }
+
+export interface AuditEntry {
+  id: number;
+  action: "room_created" | "room_updated" | "check_in" | "check_out" | "staff_updated" | "settings_updated";
+  entity_type: string;
+  entity_id: string;
+  room_number: number | null;
+  details: Record<string, unknown>;
+  created_by: string | null;
+  created_at: string;
+  actor_name?: string;
+}
