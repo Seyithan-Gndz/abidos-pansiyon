@@ -13,7 +13,7 @@ export async function login(_: AuthState, formData: FormData): Promise<AuthState
   if (!email || !password) return { error: "E-posta ve şifre zorunludur." };
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     const messages: Record<string, string> = {
       email_not_confirmed: "E-posta adresi henüz doğrulanmamış. Supabase üzerinden kullanıcıyı onaylayın.",
@@ -23,7 +23,18 @@ export async function login(_: AuthState, formData: FormData): Promise<AuthState
     };
     return { error: messages[error.code ?? ""] ?? `Giriş başarısız: ${error.message}` };
   }
-  redirect("/");
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role,approval_status")
+    .eq("id", authData.user.id)
+    .single();
+
+  if (profileError || !profile) {
+    await supabase.auth.signOut();
+    return { error: "Giriş başarılı fakat kullanıcı profili bulunamadı. Supabase profiles tablosunu kontrol edin." };
+  }
+  if (profile.approval_status !== "approved") redirect("/pending");
+  redirect(profile.role === "admin" ? "/admin" : "/reception");
 }
 
 export async function signup(_: AuthState, formData: FormData): Promise<AuthState> {

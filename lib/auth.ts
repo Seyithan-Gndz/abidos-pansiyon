@@ -9,14 +9,13 @@ import type { UserProfile } from "@/types/auth";
 export const getCurrentProfile = cache(async (): Promise<UserProfile | null> => {
   if (!isSupabaseConfigured()) return null;
   const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const userId = claimsData?.claims?.sub;
-  if (!userId) return null;
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) return null;
 
   const { data } = await supabase
     .from("profiles")
     .select("id,email,full_name,role,approval_status,created_at")
-    .eq("id", userId)
+    .eq("id", user.id)
     .single();
 
   return data as UserProfile | null;
@@ -35,4 +34,3 @@ export async function requireAdmin() {
   if (profile.role !== "admin") redirect("/reception");
   return profile;
 }
-
