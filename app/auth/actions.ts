@@ -14,7 +14,15 @@ export async function login(_: AuthState, formData: FormData): Promise<AuthState
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: "E-posta veya şifre hatalı." };
+  if (error) {
+    const messages: Record<string, string> = {
+      email_not_confirmed: "E-posta adresi henüz doğrulanmamış. Supabase üzerinden kullanıcıyı onaylayın.",
+      invalid_credentials: "E-posta veya şifre hatalı.",
+      user_banned: "Bu kullanıcı hesabı devre dışı bırakılmış.",
+      over_request_rate_limit: "Çok fazla giriş denemesi yapıldı. Birkaç dakika sonra tekrar deneyin.",
+    };
+    return { error: messages[error.code ?? ""] ?? `Giriş başarısız: ${error.message}` };
+  }
   redirect("/");
 }
 
@@ -58,4 +66,3 @@ export async function setReceptionApproval(formData: FormData) {
   if (error) throw new Error("Kullanıcı durumu güncellenemedi.");
   revalidatePath("/admin");
 }
-
