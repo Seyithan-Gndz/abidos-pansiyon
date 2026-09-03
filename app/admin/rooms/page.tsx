@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { RoomDefinitionForm } from "@/components/admin/RoomDefinitionForm";
+import { NewRoomForm } from "@/components/admin/NewRoomForm";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Room } from "@/types/room";
@@ -13,6 +14,8 @@ export default async function AdminRoomsPage() {
   const supabase = await createClient();
   const { data, error } = await supabase.from("rooms").select("data").order("floor", { ascending: false }).order("room_number", { ascending: true });
   const rooms = (data ?? []).map(row => row.data as Room);
+  const existingFloors = [...new Set(rooms.map(room => room.floor))];
+  const nextNumbers = Object.fromEntries(existingFloors.map(floor => [floor, Math.max(...rooms.filter(room => room.floor === floor).map(room => room.roomNumber), floor * 100) + 1]));
 
-  return <AdminShell><main className="p-5 md:p-8"><div className="mx-auto max-w-[1200px]"><div className="mb-6"><p className="text-[10px] font-bold tracking-[.16em] text-slate-400">YÖNETİM</p><h1 className="font-display text-2xl font-extrabold tracking-tight text-[#173545]">Odalar</h1><p className="mt-1 text-sm text-slate-500">Oda özelliklerini, kapasiteyi ve günlük/aylık fiyat türünü düzenleyin.</p></div>{error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">Odalar yüklenemedi: {error.message}</p>}<div className="space-y-3">{rooms.map(room => <RoomDefinitionForm key={room.id} room={room}/>)}</div></div></main></AdminShell>;
+  return <AdminShell><main className="p-5 md:p-8"><div className="mx-auto max-w-[1200px]"><div className="mb-6"><p className="text-[10px] font-bold tracking-[.16em] text-slate-400">YÖNETİM</p><h1 className="font-display text-2xl font-extrabold tracking-tight text-[#173545]">Odalar</h1><p className="mt-1 text-sm text-slate-500">Yeni oda ekleyin; oda özelliklerini, kapasiteyi ve günlük/aylık fiyat türünü düzenleyin.</p></div>{error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">Odalar yüklenemedi: {error.message}</p>}<NewRoomForm nextNumbers={nextNumbers}/><div className="space-y-3">{rooms.map(room => <RoomDefinitionForm key={room.id} room={room}/>)}</div></div></main></AdminShell>;
 }

@@ -6,6 +6,41 @@ import { createClient } from "@/lib/supabase/server";
 import type { Room, RentalType } from "@/types/room";
 import type { SettingsActionState } from "@/types/settings";
 
+export async function createRoom(
+  _: SettingsActionState,
+  formData: FormData,
+): Promise<SettingsActionState> {
+  await requireAdmin();
+  const floor = Number(formData.get("floor"));
+  const capacity = Number(formData.get("capacity"));
+  const bedInfo = String(formData.get("bedInfo") ?? "").trim();
+  const rentalType = String(formData.get("rentalType") ?? "daily");
+  const rate = String(formData.get("rate") ?? "").trim();
+  const note = String(formData.get("note") ?? "").trim();
+
+  if (!Number.isInteger(floor) || floor < 1 || floor > 20) return { error: "Kat bilgisi 1-20 arasında olmalıdır." };
+  if (!Number.isInteger(capacity) || capacity < 1 || capacity > 20) return { error: "Kapasite 1-20 kişi arasında olmalıdır." };
+  if (bedInfo.length < 2) return { error: "Yatak ve oda özelliği zorunludur." };
+  if (!["daily", "monthly"].includes(rentalType)) return { error: "Konaklama türü geçersiz." };
+  if (!rate) return { error: "Fiyat bilgisi zorunludur." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("add_room", {
+    p_floor: floor,
+    p_capacity: capacity,
+    p_bed_info: bedInfo,
+    p_rental_type: rentalType,
+    p_rate: rate,
+    p_note: note,
+  });
+  if (error) return { error: `Oda eklenemedi: ${error.message}` };
+
+  revalidatePath("/admin/rooms");
+  revalidatePath("/admin");
+  revalidatePath("/reception");
+  return { success: `${data} numaralı oda boş durumda oluşturuldu.` };
+}
+
 export async function updateRoomDefinition(
   _: SettingsActionState,
   formData: FormData,
@@ -56,4 +91,3 @@ export async function updateRoomDefinition(
   revalidatePath("/reception");
   return { success: `${roomNumber} numaralı oda güncellendi.` };
 }
-
