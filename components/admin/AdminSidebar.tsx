@@ -6,7 +6,7 @@ import { Banknote, BedDouble, History, LayoutDashboard, Settings, UsersRound, X 
 
 const menu = [
   { label: "Genel Bakış", icon: LayoutDashboard, href: "/admin" },
-  { label: "Odalar", icon: BedDouble },
+  { label: "Odalar", icon: BedDouble, href: "/admin/rooms" },
   { label: "Kasa", icon: Banknote },
   { label: "Personel", icon: UsersRound, href: "/admin/staff" },
   { label: "İşlem Geçmişi", icon: History },

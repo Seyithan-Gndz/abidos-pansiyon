@@ -138,6 +138,28 @@ create trigger set_room_audit
 before update on public.rooms
 for each row execute procedure public.set_room_audit_fields();
 
+create or replace function public.protect_room_definition()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if not public.is_admin() then
+    if new.id is distinct from old.id
+      or new.room_number is distinct from old.room_number
+      or new.floor is distinct from old.floor
+      or (new.data - 'status' - 'stay') is distinct from (old.data - 'status' - 'stay') then
+      raise exception 'Oda özelliklerini yalnızca admin değiştirebilir.';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger protect_room_definition
+before update on public.rooms
+for each row execute procedure public.protect_room_definition();
+
 create or replace function public.set_business_settings_audit()
 returns trigger language plpgsql as $$
 begin

@@ -19,5 +19,7 @@ export function addDays(date: string, days: number) {
 }
 
 export function roomPrice(room: Room) {
+  if (room.rentalType === "monthly") return room.monthlyPrice ?? room.price ?? "—";
+  if (room.rentalType === "daily") return room.price ?? room.monthlyPrice ?? "—";
   return room.price ?? room.monthlyPrice ?? "—";
 }

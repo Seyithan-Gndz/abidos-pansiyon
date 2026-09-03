@@ -1,4 +1,5 @@
 export type RoomStatus = "available" | "occupied" | "out_of_service";
+export type RentalType = "daily" | "monthly";
 
 export interface StayDetails {
   guestName?: string;
@@ -16,6 +17,7 @@ export interface Room {
   floor: number;
   capacity: number;
   bedInfo: string;
+  rentalType?: RentalType;
   price?: string;
   monthlyPrice?: string;
   status: RoomStatus;
