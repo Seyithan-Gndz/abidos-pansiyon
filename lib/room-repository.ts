@@ -1,7 +1,5 @@
-import { rooms as mockRooms } from "@/data/rooms";
+import { createClient } from "@/lib/supabase/client";
 import type { Room, StayDetails } from "@/types/room";
-
-const STORAGE_KEY = "abidos-room-plan-v4";
 
 export interface RoomRepository {
   list(): Promise<Room[]>;
@@ -9,27 +7,29 @@ export interface RoomRepository {
   checkOut(current: Room[], roomId: string): Promise<Room[]>;
 }
 
-class LocalRoomRepository implements RoomRepository {
+class SupabaseRoomRepository implements RoomRepository {
   async list() {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) as Room[] : structuredClone(mockRooms);
-    } catch { return structuredClone(mockRooms); }
+    const { data, error } = await createClient().from("rooms").select("data").order("room_number");
+    if (error) throw new Error("Odalar yüklenemedi: " + error.message);
+    return data.map((row) => row.data as Room);
   }
 
   async checkIn(current: Room[], roomId: string, stay: StayDetails) {
-    return this.save(current.map(room => room.id === roomId ? { ...room, status: "occupied" as const, stay } : room));
+    return this.save(current, roomId, { status: "occupied", stay });
   }
 
   async checkOut(current: Room[], roomId: string) {
-    return this.save(current.map(room => room.id === roomId ? { ...room, status: "available" as const, stay: undefined } : room));
+    return this.save(current, roomId, { status: "available", stay: undefined });
   }
 
-  private async save(next: Room[]) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  private async save(current: Room[], roomId: string, changes: Partial<Room>) {
+    const next = current.map((room) => room.id === roomId ? { ...room, ...changes } : room);
+    const changed = next.find((room) => room.id === roomId);
+    if (!changed) throw new Error("Oda bulunamadı.");
+    const { error } = await createClient().from("rooms").update({ data: changed }).eq("id", roomId);
+    if (error) throw new Error("Oda güncellenemedi: " + error.message);
     return next;
   }
 }
 
-// İleride ApiRoomRepository ile değiştirilecek tek bağımlılık noktası.
-export const roomRepository: RoomRepository = new LocalRoomRepository();
+export const roomRepository: RoomRepository = new SupabaseRoomRepository();
